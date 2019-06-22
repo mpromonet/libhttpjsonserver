@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <sstream>
 
 #include "HttpServerRequestHandler.h"
 
@@ -82,19 +83,26 @@ int main(int argc, char* argv[])
 	}	
 	
 	// http api callbacks
-	std::map<std::string,HttpServerRequestHandler::httpFunction> func;
-	func["/echo"]   = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
+	std::map<std::string,HttpServerRequestHandler::httpFunction> httpfunc;
+	httpfunc["/echo"]   = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
 		return in;
 	};
-	func["/help"]           = [&func](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
+	httpfunc["/help"]           = [&httpfunc](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
 		Json::Value answer;
-		for (auto it : func) {
+		for (auto it : httpfunc) {
 			answer.append(it.first);
 		}
 		return answer;
 	};	
+	
+	std::map<std::string,HttpServerRequestHandler::wsFunction> wsfunc;
+	wsfunc["/ws"]  = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
+		std::string msg(Json::StyledWriter().write(in));
+		std::cout << "message:" << msg << std::endl; 
+		return in;
+	};
 
-	HttpServerRequestHandler httpServer(func, options);
+	HttpServerRequestHandler httpServer(httpfunc, wsfunc, options);
 	if (httpServer.getContext() == NULL)
 	{
 		std::cout << "Cannot listen on port:" << port << std::endl; 
@@ -103,8 +111,17 @@ int main(int argc, char* argv[])
 	{
 		std::cout << "Started on port:" << port << " webroot:" << webroot << std::endl; 
 		signal(SIGINT, signal_handler);
+		int cnt = 0;
 		while (!exitFlag) {
 			sleep(1);
+			std::ostringstream os;
+			os << "{\"value\":";
+			os << (cnt++);
+			os << "}";
+			std::string str = os.str();
+			std::cout << "send:" << str << std::endl; 
+			httpServer.publishTxt("/ws", str.c_str(), str.size());
+			httpServer.publishBin("/ws", str.c_str(), str.size());
 		}
 	}
 	
