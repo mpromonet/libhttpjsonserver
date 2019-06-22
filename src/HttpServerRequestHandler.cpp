@@ -60,7 +60,7 @@ class RequestHandler : public CivetHandler
 		// fill out
 		if (out.isNull() == false)
 		{
-			std::string answer(Json::StyledWriter().write(out));
+			std::string answer(Json::writeString(m_jsonWriterBuilder,out));
 			std::cout << "answer:" << answer << std::endl;	
 
 			mg_printf(conn,"HTTP/1.1 200 OK\r\n");
@@ -87,6 +87,7 @@ class RequestHandler : public CivetHandler
 
   private:
     HttpServerRequestHandler::httpFunction      m_func;	  
+	Json::StreamWriterBuilder                   m_jsonWriterBuilder;
   
     Json::Value getInputMessage(const struct mg_request_info *req_info, struct mg_connection *conn) {
         Json::Value  jmessage;
@@ -141,6 +142,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 	private:
 		HttpServerRequestHandler::httpFunction      m_func;	
 		std::list<const struct mg_connection *>     m_ws;	
+		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
 	
 		virtual bool handleConnection(CivetServer *server, const struct mg_connection *conn) {
 			printf("WS connected\n");
@@ -177,7 +179,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 				const struct mg_request_info *req_info = mg_get_request_info(conn);
 				Json::Value out(m_func(req_info, in));
 				
-				std::string answer(Json::StyledWriter().write(out));
+				std::string answer(Json::writeString(m_jsonWriterBuilder,out));
 				mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, answer.c_str(), answer.size());
 			}
 			
@@ -187,7 +189,8 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		virtual void handleClose(CivetServer *server, const struct mg_connection *conn) {
 			printf("WS closed\n");
 			m_ws.remove(conn);		
-		}	
+		}
+		
 };
 
 /* ---------------------------------------------------------------------------
