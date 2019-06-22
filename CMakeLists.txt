@@ -20,9 +20,9 @@ include_directories(civetweb PRIVATE civetweb/include)
 
 # libhttpserver
 FILE(GLOB LIBSOURCE src/*.cpp)
-add_library (libhttpserver STATIC ${LIBSOURCE})	
-target_include_directories(libhttpserver PUBLIC inc) 
-target_link_libraries (${PROJECT_NAME} libhttpserver) 
+add_library (httpjsonserver STATIC ${LIBSOURCE})	
+target_include_directories(httpjsonserver PUBLIC inc) 
+target_link_libraries (${PROJECT_NAME} httpjsonserver) 
 
 # jsoncpp
 add_subdirectory(jsoncpp)
