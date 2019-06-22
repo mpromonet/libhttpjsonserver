@@ -39,6 +39,9 @@ const struct CivetCallbacks * getCivetCallbacks()
 class RequestHandler : public CivetHandler
 {
   public:
+	RequestHandler(HttpServerRequestHandler::httpFunction & func): m_func(func) {
+	}
+	  
     bool handle(CivetServer *server, struct mg_connection *conn)
     {
         bool ret = false;
@@ -48,14 +51,13 @@ class RequestHandler : public CivetHandler
         
         HttpServerRequestHandler* httpServer = (HttpServerRequestHandler*)server;
         
-        HttpServerRequestHandler::httpFunction fct = httpServer->getFunction(req_info->request_uri);
-        if (fct != NULL)
+        if (m_func != NULL)
         {
             // read input
             Json::Value  in = this->getInputMessage(req_info, conn);
             
             // invoke API implementation
-            Json::Value out(fct(req_info, in));
+            Json::Value out(m_func(req_info, in));
             
             // fill out
             if (out.isNull() == false)
@@ -87,6 +89,8 @@ class RequestHandler : public CivetHandler
     }
 
   private:
+    HttpServerRequestHandler::httpFunction      m_func;	  
+  
     Json::Value getInputMessage(const struct mg_request_info *req_info, struct mg_connection *conn) {
         Json::Value  jmessage;
 
@@ -114,12 +118,12 @@ class RequestHandler : public CivetHandler
 
             // parse in
             Json::CharReaderBuilder builder;
-	    Json::CharReader* reader(builder.newCharReader());
+			Json::CharReader* reader(builder.newCharReader());
             if (!reader->parse(body.c_str(), body.c_str() + body.size(), &jmessage, NULL))
             {
                 std::cout << "Received unknown message:" << body << std::endl;
             }
-	    delete reader;
+			delete reader;
         }
         return jmessage;
     }	
@@ -168,30 +172,17 @@ class WebsocketHandler: public CivetWebSocketHandler {
 **  Constructor
 ** -------------------------------------------------------------------------*/
 HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, const std::vector<std::string>& options) 
-    : CivetServer(options, getCivetCallbacks()), m_func(func)
+    : CivetServer(options, getCivetCallbacks())
 {
     // register handlers
-    for (auto it : m_func) {
-        this->addHandler(it.first, new RequestHandler());
+    for (auto it : func) {
+        this->addHandler(it.first, new RequestHandler(it.second));
     } 	
     
     // register WS handlers
     this->addWebSocketHandler("/ws", new WebsocketHandler());
 }	
     
-
-HttpServerRequestHandler::httpFunction HttpServerRequestHandler::getFunction(const std::string& uri)
-{
-    httpFunction fct = NULL;
-    std::map<std::string,httpFunction>::iterator it = m_func.find(uri);
-    if (it != m_func.end())
-    {
-        fct = it->second;
-    }
-    
-    return fct;
-}
-
 void HttpServerRequestHandler::addWebsocketConnection(const struct mg_connection *conn)
 {
     m_ws.push_back(conn);

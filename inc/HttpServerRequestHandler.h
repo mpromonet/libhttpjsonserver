@@ -27,14 +27,12 @@ class HttpServerRequestHandler : public CivetServer
 	
 		HttpServerRequestHandler(std::map<std::string,httpFunction>& func, const std::vector<std::string>& options); 
 	
-		httpFunction getFunction(const std::string& uri);
 		void addWebsocketConnection(const struct mg_connection *conn);
 		void delWebsocketConnection(const struct mg_connection *conn);
 	
 		void notifyWebsocketConnection(const char* buf, unsigned int size);
 				
 	protected:
-		std::map<std::string,httpFunction>      m_func;
 		std::list<const struct mg_connection *> m_ws;
 };
 
