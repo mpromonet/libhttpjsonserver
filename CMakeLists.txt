@@ -14,17 +14,10 @@ target_link_libraries (${PROJECT_NAME} Threads::Threads)
 
 # civetweb
 add_definitions(-DUSE_WEBSOCKET -DNO_SSL_DL)
-add_library (civetweb STATIC civetweb/src/civetweb.c civetweb/src/CivetServer.cpp)	
-target_link_libraries (${PROJECT_NAME} civetweb ssl crypto) 
-include_directories(civetweb PRIVATE civetweb/include) 
 
 # libhttpserver
-FILE(GLOB LIBSOURCE src/*.cpp)
+FILE(GLOB LIBSOURCE src/*.cpp civetweb/src/civetweb.c civetweb/src/CivetServer.cpp jsoncpp/src/lib_json/*.cpp)
 add_library (httpjsonserver STATIC ${LIBSOURCE})	
-target_include_directories(httpjsonserver PUBLIC inc) 
-target_link_libraries (${PROJECT_NAME} httpjsonserver) 
+target_include_directories(httpjsonserver PUBLIC inc civetweb/include jsoncpp/include) 
+target_link_libraries (${PROJECT_NAME} httpjsonserver ssl crypto)  
 
-# jsoncpp
-add_subdirectory(jsoncpp)
-target_link_libraries (${PROJECT_NAME} jsoncpp_lib) 
-include_directories(jsoncpp_lib PRIVATE jsoncpp/include) 
