@@ -165,14 +165,12 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 				// parse in
 				std::string body(data, data_len);
 				Json::CharReaderBuilder builder;
-				Json::CharReader* reader(builder.newCharReader());
+				std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 				Json::Value in;
 				if (!reader->parse(body.c_str(), body.c_str() + body.size(), &in, NULL))
 				{
 					std::cout << "Received unknown message:" << body << std::endl;
 				}
-				delete reader;
-				
 						
 				// invoke API implementation
 				const struct mg_request_info *req_info = mg_get_request_info(conn);
