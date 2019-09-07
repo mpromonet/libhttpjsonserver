@@ -96,8 +96,9 @@ int main(int argc, char* argv[])
 	};	
 	
 	std::map<std::string,HttpServerRequestHandler::wsFunction> wsfunc;
-	wsfunc["/ws"]  = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
-		std::string msg(Json::StyledWriter().write(in));
+	Json::StreamWriterBuilder jsonWriterBuilder;
+	wsfunc["/ws"]  = [&jsonWriterBuilder](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
+		std::string msg(Json::writeString(jsonWriterBuilder,in));
 		std::cout << "message:" << msg << std::endl; 
 		return in;
 	};
