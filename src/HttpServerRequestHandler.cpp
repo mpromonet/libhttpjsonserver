@@ -136,6 +136,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 			for (auto ws : m_ws) {
 				mg_websocket_write((struct mg_connection *)ws, opcode, buffer, size);
 			}
+			return (m_ws.size() != 0);
 		}
 		
 	private:
