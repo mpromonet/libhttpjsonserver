@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <mutex>
 	
 #include "HttpServerRequestHandler.h"
 
@@ -133,6 +134,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		}
 		
 		virtual bool publish(int opcode, const char* buffer, unsigned int size) {
+			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			for (auto ws : m_ws) {
 				mg_websocket_write((struct mg_connection *)ws, opcode, buffer, size);
 			}
@@ -143,9 +145,11 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		HttpServerRequestHandler::httpFunction      m_func;	
 		std::list<const struct mg_connection *>     m_ws;	
 		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
+		std::mutex                                  m_cnxMutex; 
 	
 		virtual bool handleConnection(CivetServer *server, const struct mg_connection *conn) {
 			printf("WS connected\n");
+			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.push_back(conn);
 			return true;
 		}
@@ -186,6 +190,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 
 		virtual void handleClose(CivetServer *server, const struct mg_connection *conn) {
 			printf("WS closed\n");
+			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.remove(conn);		
 		}
 		
