@@ -20,17 +20,21 @@
 #include "HttpServerRequestHandler.h"
 
 
-int log_message(const struct mg_connection *conn, const char *message) 
+int defaultLogger(const struct mg_connection *conn, const char *message) 
 {
 	fprintf(stderr, "%s\n", message);
 	return 0;
 }
 
 static struct CivetCallbacks _callbacks;
-const struct CivetCallbacks * getCivetCallbacks() 
+const struct CivetCallbacks * getCivetCallbacks(int (*logger)(const struct mg_connection *, const char *)) 
 {
 	memset(&_callbacks, 0, sizeof(_callbacks));
-	_callbacks.log_message = &log_message;
+	if (logger) {
+		_callbacks.log_message = logger;
+	} else {
+		_callbacks.log_message = &defaultLogger;
+	}
 	return &_callbacks;
 }
 
@@ -49,7 +53,7 @@ class RequestHandler : public CivetHandler
 		bool ret = false;
 		const struct mg_request_info *req_info = mg_get_request_info(conn);
 		
-		std::cout << "uri:" << req_info->request_uri << std::endl;
+		_callbacks.log_message(conn, req_info->request_uri );	
 				
 		// read input
 		Json::Value  in = this->getInputMessage(req_info, conn);
@@ -61,7 +65,7 @@ class RequestHandler : public CivetHandler
 		if (out.isNull() == false)
 		{
 			std::string answer(Json::writeString(m_jsonWriterBuilder,out));
-			std::cout << "answer:" << answer << std::endl;	
+			_callbacks.log_message(conn, answer.c_str());	
 
 			mg_printf(conn,"HTTP/1.1 200 OK\r\n");
 			mg_printf(conn,"Access-Control-Allow-Origin: *\r\n");
@@ -148,14 +152,14 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		std::mutex                                  m_cnxMutex; 
 	
 		virtual bool handleConnection(CivetServer *server, const struct mg_connection *conn) {
-			printf("WS connected\n");
+			_callbacks.log_message(conn, "WS connected");	
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.push_back(conn);
 			return true;
 		}
 
 		virtual void handleReadyState(CivetServer *server, struct mg_connection *conn) {
-			printf("WS ready\n");
+			_callbacks.log_message(conn, "WS ready");	
 		}
 
 		virtual bool handleData(CivetServer *server,
@@ -189,7 +193,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		}
 
 		virtual void handleClose(CivetServer *server, const struct mg_connection *conn) {
-			printf("WS closed\n");
+			_callbacks.log_message(conn, "WS closed");	
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.remove(conn);		
 		}
@@ -199,8 +203,8 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 /* ---------------------------------------------------------------------------
 **  Constructor
 ** -------------------------------------------------------------------------*/
-HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options) 
-	: CivetServer(options, getCivetCallbacks())
+HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*logger)(const struct mg_connection *, const char *)) 
+	: CivetServer(options, getCivetCallbacks(logger))
 {
 	// register handlers
 	for (auto it : func) {
