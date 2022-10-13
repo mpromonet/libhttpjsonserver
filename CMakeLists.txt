@@ -3,9 +3,15 @@ cmake_minimum_required (VERSION 3.0.0)
 project (httpjsonservertest)
 
 set (CMAKE_CXX_STANDARD 11)
+option (WITH_SSL "Enable SSL support" ON)
 
 # civetweb
-add_definitions(-DUSE_WEBSOCKET -DNO_SSL_DL)
+add_definitions(-DUSE_WEBSOCKET)
+if (WITH_SSL)
+  add_definitions(-DNO_SSL_DL)  
+else()
+  add_definitions(-DNO_SSL)  
+endif()
 
 # libhttpserver
 FILE(GLOB LIBSOURCE src/*.cpp civetweb/src/civetweb.c civetweb/src/CivetServer.cpp jsoncpp/src/lib_json/*.cpp)
@@ -16,7 +22,10 @@ target_include_directories(httpjsonserver PUBLIC inc civetweb/include jsoncpp/in
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package (Threads)
-target_link_libraries (httpjsonserver Threads::Threads ssl crypto)  
+target_link_libraries (httpjsonserver Threads::Threads)  
+if (WITH_SSL)
+  target_link_libraries (httpjsonserver ssl crypto)  
+endif()
 
 # test program
 add_executable (${PROJECT_NAME} main.cpp)
