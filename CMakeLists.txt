@@ -8,7 +8,7 @@ option (WITH_SSL "Enable SSL support" ON)
 # civetweb
 add_definitions(-DUSE_WEBSOCKET)
 if (WITH_SSL)
-  add_definitions(-DNO_SSL_DL)  
+  add_definitions(-DNO_SSL_DL -DOPENSSL_API_1_1)  
 else()
   add_definitions(-DNO_SSL)  
 endif()
