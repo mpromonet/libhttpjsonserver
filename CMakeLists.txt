@@ -22,9 +22,9 @@ target_include_directories(httpjsonserver PUBLIC inc civetweb/include jsoncpp/in
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package (Threads)
-target_link_libraries (httpjsonserver Threads::Threads)  
+target_link_libraries (httpjsonserver PUBLIC Threads::Threads)  
 if (WITH_SSL)
-  target_link_libraries (httpjsonserver ssl crypto)  
+	target_link_libraries (httpjsonserver PUBLIC ssl crypto)  
 endif()
 
 # test program
