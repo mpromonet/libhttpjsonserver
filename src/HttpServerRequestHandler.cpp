@@ -101,23 +101,7 @@ class RequestHandler : public CivetHandler
 		long long tlen = req_info->content_length;
 		if (tlen > 0)
 		{
-			std::string body;
-			long long nlen = 0;
-			const long long bufSize = 1024;
-			char buf[bufSize];
-			while (nlen < tlen) {
-				long long rlen = tlen - nlen;
-				if (rlen > bufSize) {
-					rlen = bufSize;
-				}
-				rlen = mg_read(conn, buf, (size_t)rlen);
-				if (rlen <= 0) {
-					break;
-				}
-				body.append(buf, rlen);
-
-				nlen += rlen;
-			}
+			std::string body = CivetServer::getPostData(conn);
 
 			// parse in
 			std::unique_ptr<Json::CharReader> reader(m_jsonReaderbuilder.newCharReader());
@@ -168,7 +152,6 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 					char *data,
 					size_t data_len) {
 			int opcode = bits&0xf;
-			printf("WS got %lu bytes %u\n", (long unsigned)data_len, opcode);
 						
 			if (opcode == MG_WEBSOCKET_OPCODE_TEXT) {
 				// parse in
