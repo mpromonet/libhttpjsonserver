@@ -67,6 +67,8 @@ int main(int argc, char* argv[])
 	options.push_back("*");	
 	options.push_back("listening_ports");
 	options.push_back(port);
+	options.push_back("enable_keep_alive");
+	options.push_back("yes");
 	if (!sslCertificate.empty()) {
 		options.push_back("ssl_certificate");
 		options.push_back(sslCertificate);
@@ -95,6 +97,11 @@ int main(int argc, char* argv[])
 		return answer;
 	};	
 	
+	std::map<std::string,HttpServerRequestHandler::httpFunction> ssefunc;
+	ssefunc["/sse"]   = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
+		return "";
+	};
+
 	std::map<std::string,HttpServerRequestHandler::wsFunction> wsfunc;
 	Json::StreamWriterBuilder jsonWriterBuilder;
 	wsfunc["/ws"]  = [&jsonWriterBuilder](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { 
@@ -103,7 +110,7 @@ int main(int argc, char* argv[])
 		return in;
 	};
 
-	HttpServerRequestHandler httpServer(httpfunc, wsfunc, options);
+	HttpServerRequestHandler httpServer(httpfunc, ssefunc, wsfunc, options);
 	if (httpServer.getContext() == NULL)
 	{
 		std::cout << "Cannot listen on port:" << port << std::endl; 
@@ -123,6 +130,7 @@ int main(int argc, char* argv[])
 			std::cout << "send:" << str << std::endl; 
 			httpServer.publishTxt("/ws", str.c_str(), str.size());
 			httpServer.publishBin("/ws", str.c_str(), str.size());
+			httpServer.publishSSE("/sse", str.c_str(), str.size());
 		}
 	}
 	

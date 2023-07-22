@@ -31,14 +31,16 @@ class HttpServerRequestHandler : public CivetServer
 		typedef std::function<Json::Value(const struct mg_request_info *, const Json::Value &)> httpFunction;
 		typedef std::function<Json::Value(const struct mg_request_info *, const Json::Value &)> wsFunction;
 	
-		HttpServerRequestHandler(std::map<std::string,httpFunction>& httpfunc, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*)(const struct mg_connection *, const char *) = NULL); 
+		HttpServerRequestHandler(std::map<std::string,httpFunction>& httpfunc, std::map<std::string,httpFunction>& ssefunc, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*)(const struct mg_connection *, const char *) = NULL); 
 		virtual ~HttpServerRequestHandler();
 	
 		void publishTxt(const std::string & wsurl, const char* buf, unsigned int size);
 		void publishBin(const std::string & wsurl, const char* buf, unsigned int size);
+		void publishSSE(const std::string & wsurl, const char* buf, unsigned int size);
 				
 	protected:
 		std::map<std::string, WebsocketHandlerInterface*> m_wsHandler;
+		std::map<std::string, CivetHandler*> m_sseHandler;
 };
 
 

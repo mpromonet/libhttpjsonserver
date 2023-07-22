@@ -47,8 +47,11 @@ class RequestHandler : public CivetHandler
   public:
 	RequestHandler(HttpServerRequestHandler::httpFunction & func): m_func(func) {
 	}
+
+	virtual ~RequestHandler() {
+	}	
 	  
-	bool handle(CivetServer *server, struct mg_connection *conn)
+	virtual bool handle(CivetServer *server, struct mg_connection *conn)
 	{
 		bool ret = false;
 		const struct mg_request_info *req_info = mg_get_request_info(conn);
@@ -80,16 +83,16 @@ class RequestHandler : public CivetHandler
 		
 		return ret;
 	}
-	bool handleGet(CivetServer *server, struct mg_connection *conn)
+	virtual bool handleGet(CivetServer *server, struct mg_connection *conn)
 	{
 		return handle(server, conn);
 	}
-	bool handlePost(CivetServer *server, struct mg_connection *conn)
+	virtual bool handlePost(CivetServer *server, struct mg_connection *conn)
 	{
 		return handle(server, conn);
 	}
 
-  private:
+  protected:
 	HttpServerRequestHandler::httpFunction      m_func;	  
 	Json::StreamWriterBuilder                   m_jsonWriterBuilder;
 	Json::CharReaderBuilder                     m_jsonReaderbuilder;
@@ -115,6 +118,54 @@ class RequestHandler : public CivetHandler
 	}	
 };
 
+class SSERequestHandler : public RequestHandler
+{
+  public:
+	SSERequestHandler(HttpServerRequestHandler::httpFunction & func): RequestHandler(func) {
+	}
+
+	virtual ~SSERequestHandler() {
+
+	}
+	  
+	bool handle(CivetServer *server, struct mg_connection *conn)
+	{
+		bool ret = false;
+		const struct mg_request_info *req_info = mg_get_request_info(conn);
+		
+		_callbacks.log_message(conn, req_info->request_uri );	
+				
+		// read input
+		Json::Value  in = this->getInputMessage(req_info, conn);
+			
+		// invoke API implementation
+		Json::Value out(m_func(req_info, in));
+			
+
+		mg_printf(conn,"HTTP/1.1 200 OK\r\n");
+		mg_printf(conn,"Access-Control-Allow-Origin: *\r\n");
+		mg_printf(conn,"Content-Type: text/event-stream\r\n");
+		mg_printf(conn,"Transfer-Encoding: chunked\r\n");
+		mg_printf(conn,"Connection: keep-alive\r\n");
+		mg_printf(conn,"\r\n");
+
+		m_connectionList.push_back(conn);
+		
+		return true;
+	}
+
+	virtual bool publish(const char* buffer, unsigned int size) {
+		const std::lock_guard<std::mutex> lock(m_cnxMutex);
+		for (auto conn : m_connectionList) {
+			mg_printf(conn, "data: %s\n\n", buffer);
+		}
+		return true;
+	}
+
+	std::mutex                     m_cnxMutex; 
+	std::list<mg_connection *>     m_connectionList;	
+};
+
 
 class WebsocketHandler: public WebsocketHandlerInterface {	
 	public:
@@ -124,7 +175,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		virtual bool publish(int opcode, const char* buffer, unsigned int size) {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			for (auto ws : m_ws) {
-				mg_websocket_write((struct mg_connection *)ws, opcode, buffer, size);
+				mg_websocket_write((mg_connection *)ws, opcode, buffer, size);
 			}
 			return (m_ws.size() != 0);
 		}
@@ -186,14 +237,21 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 /* ---------------------------------------------------------------------------
 **  Constructor
 ** -------------------------------------------------------------------------*/
-HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*logger)(const struct mg_connection *, const char *)) 
+HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, std::map<std::string,httpFunction>& ssefunc, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*logger)(const struct mg_connection *, const char *)) 
 	: CivetServer(options, getCivetCallbacks(logger))
 {
 	// register handlers
 	for (auto it : func) {
 		this->addHandler(it.first, new RequestHandler(it.second));
 	} 	
-	
+
+	// register sse handlers
+	for (auto it : ssefunc) {
+		SSERequestHandler* handler = new SSERequestHandler(it.second);
+		this->addHandler(it.first, handler);
+		m_sseHandler[it.first] = handler;
+	} 	
+
 	// register WS handlers
 	for (auto it : wsfunc) {
 		WebsocketHandler* handler = new WebsocketHandler(it.second);
@@ -228,5 +286,18 @@ void HttpServerRequestHandler::publishTxt(const std::string & uri, const char* b
 	}
 	if (handler) {
 		handler->publish(MG_WEBSOCKET_OPCODE_TEXT, buffer, size);
+	}	
+}
+
+void HttpServerRequestHandler::publishSSE(const std::string & uri, const char* buffer, unsigned int size)
+{
+	CivetHandler* handler = NULL;
+	std::map<std::string,CivetHandler*>::iterator it = m_sseHandler.find(uri);
+	if (it != m_sseHandler.end())
+	{
+		handler = it->second;
+	}
+	if (handler) {
+		((SSERequestHandler*)handler)->publish(buffer, size);
 	}	
 }
