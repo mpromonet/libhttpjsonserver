@@ -19,8 +19,6 @@ add_library (httpjsonserver STATIC ${LIBSOURCE})
 target_include_directories(httpjsonserver PUBLIC inc civetweb/include jsoncpp/include) 
 
 # thread
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package (Threads)
 target_link_libraries (httpjsonserver PUBLIC Threads::Threads)  
 if (WITH_SSL)
