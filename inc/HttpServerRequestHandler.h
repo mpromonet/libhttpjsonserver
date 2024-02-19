@@ -12,6 +12,7 @@
 #include <list>
 #include <map>
 #include <functional>
+#include <mutex>
 
 #include "json/json.h"
 #include "CivetServer.h"
@@ -38,6 +39,7 @@ class HttpServerRequestHandler : public CivetServer
 		void publishBin(const std::string & wsurl, const char* buf, unsigned int size);
 				
 	protected:
+		void publish(const std::string & wsurl, int opcode, const char* buf, unsigned int size);
 		std::map<std::string, WebsocketHandlerInterface*> m_wsHandler;
 };
 
