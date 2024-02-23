@@ -32,7 +32,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		std::list<const struct mg_connection *>     m_ws;	
 		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
 		std::mutex                                  m_cnxMutex; 
-		const CivetCallbacks *                     m_callbacks;
+		const CivetCallbacks *                      m_callbacks;
 	
 		virtual bool handleConnection(CivetServer *server, const struct mg_connection *conn) {
 			m_callbacks->log_message(conn, "WS connected");	

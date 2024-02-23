@@ -44,20 +44,36 @@ const struct CivetCallbacks * getCivetCallbacks(int (*logger)(const struct mg_co
 **  Constructor
 ** -------------------------------------------------------------------------*/
 HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunction>& func, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*logger)(const struct mg_connection *, const char *)) 
-	: CivetServer(options, getCivetCallbacks(logger))
+	: CivetServer(options, getCivetCallbacks(logger)),
+	  m_callbacks(getCivetCallbacks(logger))
 {
 	// register handlers
 	for (auto it : func) {
-		this->addHandler(it.first, new RequestHandler(it.second, getCivetCallbacks(logger)));
+		this->addHandler(it.first, new RequestHandler(it.second, m_callbacks));
 	} 	
 	
 	// register WS handlers
 	for (auto it : wsfunc) {
-		WebsocketHandler* handler = new WebsocketHandler(it.second, getCivetCallbacks(logger));
-		this->addWebSocketHandler(it.first, handler);
-		m_wsHandler[it.first] = handler;
+		this->addWebSocket(it.first, it.second);
 	} 		
-}	
+}
+
+void HttpServerRequestHandler::addWebSocket(const std::string & uri, wsFunction func)
+{
+	WebsocketHandler* handler = new WebsocketHandler(func, m_callbacks);
+	this->addWebSocketHandler(uri, handler);
+	m_wsHandler[uri] = handler;
+}
+
+void HttpServerRequestHandler::removeWebSocket(const std::string & uri)
+{
+	std::map<std::string,WebsocketHandlerInterface*>::iterator it = m_wsHandler.find(uri);
+	if (it != m_wsHandler.end())
+	{
+		this->removeWebSocketHandler(uri);
+		m_wsHandler.erase(it);
+	}
+}
 
 HttpServerRequestHandler::~HttpServerRequestHandler() {
 }
