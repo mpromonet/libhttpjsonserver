@@ -88,6 +88,13 @@ void HttpServerRequestHandler::publishTxt(const std::string & uri, const char* b
 	publish(uri, MG_WEBSOCKET_OPCODE_TEXT, buffer, size);
 }
 
+void HttpServerRequestHandler::publishJSON(const std::string & uri, const Json::Value & data)
+{
+	Json::StreamWriterBuilder builder;
+	std::string buffer = Json::writeString(builder, data);
+	publish(uri, MG_WEBSOCKET_OPCODE_TEXT, buffer.c_str(), buffer.size());
+}
+
 void HttpServerRequestHandler::publish(const std::string & uri, int opcode, const char* buffer, unsigned int size)
 {
 	WebsocketHandlerInterface* handler = NULL;
