@@ -7,7 +7,6 @@
 ** 
 ** -------------------------------------------------------------------------*/
 
-#include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
