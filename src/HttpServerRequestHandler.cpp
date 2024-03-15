@@ -21,21 +21,11 @@
 #include "WebsocketHandler.h"
 
 
-int defaultLogger(const struct mg_connection *conn, const char *message) 
-{
-	fprintf(stderr, "%s\n", message);
-	return 0;
-}
-
 static struct CivetCallbacks _callbacks;
 const struct CivetCallbacks * getCivetCallbacks(int (*logger)(const struct mg_connection *, const char *)) 
 {
 	memset(&_callbacks, 0, sizeof(_callbacks));
-	if (logger) {
-		_callbacks.log_message = logger;
-	} else {
-		_callbacks.log_message = &defaultLogger;
-	}
+	_callbacks.log_message = logger;
 	return &_callbacks;
 }
 
