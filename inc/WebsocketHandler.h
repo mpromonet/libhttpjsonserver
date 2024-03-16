@@ -34,15 +34,21 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		std::mutex                                  m_cnxMutex; 
 		const CivetCallbacks *                      m_callbacks;
 	
+		void log_message(const struct mg_connection *conn, const char *message) {
+			if (m_callbacks->log_message) {
+				m_callbacks->log_message(conn, message);
+			}
+		}
+
 		virtual bool handleConnection(CivetServer *server, const struct mg_connection *conn) {
-			m_callbacks->log_message(conn, "WS connected");	
+			log_message(conn, "WS connected");	
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.push_back(conn);
 			return true;
 		}
 
 		virtual void handleReadyState(CivetServer *server, struct mg_connection *conn) {
-			m_callbacks->log_message(conn, "WS ready");	
+			log_message(conn, "WS ready");	
 		}
 
 		virtual bool handleData(CivetServer *server,
@@ -75,7 +81,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		}
 
 		virtual void handleClose(CivetServer *server, const struct mg_connection *conn) {
-			m_callbacks->log_message(conn, "WS closed");	
+			log_message(conn, "WS closed");	
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.remove(conn);		
 		}

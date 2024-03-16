@@ -23,12 +23,18 @@ class RequestHandler : public CivetHandler
 	RequestHandler(HttpServerRequestHandler::httpFunction & func, const CivetCallbacks * callbacks): m_func(func), m_callbacks(callbacks) {
 	}
 	  
+	void log_message(const struct mg_connection *conn, const char *message) {
+		if (m_callbacks->log_message) {
+			m_callbacks->log_message(conn, message);
+		}
+	}
+
 	bool handle(CivetServer *server, struct mg_connection *conn)
 	{
 		bool ret = false;
 		const struct mg_request_info *req_info = mg_get_request_info(conn);
 		
-		m_callbacks->log_message(conn, req_info->request_uri );	
+		log_message(conn, req_info->request_uri );
 				
 		// read input
 		Json::Value  in = this->getInputMessage(req_info, conn);
@@ -40,7 +46,7 @@ class RequestHandler : public CivetHandler
 		if (out.isNull() == false)
 		{
 			std::string answer(Json::writeString(m_jsonWriterBuilder,out));
-			m_callbacks->log_message(conn, answer.c_str());	
+			log_message(conn, answer.c_str());	
 
 			mg_printf(conn,"HTTP/1.1 200 OK\r\n");
 			mg_printf(conn,"Access-Control-Allow-Origin: *\r\n");
@@ -68,7 +74,7 @@ class RequestHandler : public CivetHandler
 	HttpServerRequestHandler::httpFunction      m_func;	  
 	Json::StreamWriterBuilder                   m_jsonWriterBuilder;
 	Json::CharReaderBuilder                     m_jsonReaderbuilder;
-	const CivetCallbacks *                     m_callbacks;
+	const CivetCallbacks *                      m_callbacks;
   
 	Json::Value getInputMessage(const struct mg_request_info *req_info, struct mg_connection *conn) {
 		Json::Value  jmessage;
