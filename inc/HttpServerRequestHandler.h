@@ -21,6 +21,7 @@ class WebsocketHandlerInterface : public CivetWebSocketHandler
 {
 	public:
 		virtual bool publish(int opcode, const char* buffer, unsigned int size) = 0;
+		virtual int getNbConnections() = 0;
 };
 
 /* ---------------------------------------------------------------------------
@@ -40,6 +41,14 @@ class HttpServerRequestHandler : public CivetServer
 		void publishBin(const std::string & wsurl, const char* buf, unsigned int size);
 		void addWebSocket(const std::string & wsurl, wsFunction func = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { return in; });
 		void removeWebSocket(const std::string & wsurl);
+
+		int getNbConnections(const std::string & wsurl) {
+			std::map<std::string,WebsocketHandlerInterface*>::iterator it = m_wsHandler.find(wsurl);
+			if (it != m_wsHandler.end()) {
+				return it->second->getNbConnections();
+			}
+			return 0;
+		}
 				
 	protected:
 		void publish(const std::string & wsurl, int opcode, const char* buf, unsigned int size);

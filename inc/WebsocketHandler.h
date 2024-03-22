@@ -19,12 +19,17 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		WebsocketHandler(HttpServerRequestHandler::wsFunction & func, const CivetCallbacks * callbacks): m_func(func), m_callbacks(callbacks) {
 		}
 		
-		virtual bool publish(int opcode, const char* buffer, unsigned int size) {
+		bool publish(int opcode, const char* buffer, unsigned int size) override {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			for (auto ws : m_ws) {
 				mg_websocket_write((struct mg_connection *)ws, opcode, buffer, size);
 			}
 			return (m_ws.size() != 0);
+		}
+
+		int getNbConnections() override {
+			const std::lock_guard<std::mutex> lock(m_cnxMutex);
+			return m_ws.size();
 		}
 		
 	private:
