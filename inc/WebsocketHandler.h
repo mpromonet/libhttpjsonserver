@@ -18,7 +18,10 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 	public:
 		WebsocketHandler(HttpServerRequestHandler::wsFunction & func, const CivetCallbacks * callbacks): m_func(func), m_callbacks(callbacks) {
 		}
-		
+
+		WebsocketHandler(const CivetCallbacks * callbacks): m_func([](const struct mg_request_info *, const Json::Value &) -> Json::Value{ return Json::Value(); }), m_callbacks(callbacks) {
+		}
+
 		bool publish(int opcode, const char* buffer, unsigned int size) override {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			for (auto ws : m_ws) {
@@ -31,14 +34,8 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			return m_ws.size();
 		}
-		
-	private:
-		HttpServerRequestHandler::httpFunction      m_func;	
-		std::list<const struct mg_connection *>     m_ws;	
-		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
-		std::mutex                                  m_cnxMutex; 
-		const CivetCallbacks *                      m_callbacks;
-	
+			
+	protected:
 		void log_message(const struct mg_connection *conn, const char *message) {
 			if (m_callbacks->log_message) {
 				m_callbacks->log_message(conn, message);
@@ -90,6 +87,13 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			m_ws.remove(conn);		
 		}
-		
+
+	private:
+		HttpServerRequestHandler::httpFunction      m_func;	
+		std::list<const struct mg_connection *>     m_ws;	
+		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
+		std::mutex                                  m_cnxMutex; 
+		const CivetCallbacks *                      m_callbacks;
+
 };
 

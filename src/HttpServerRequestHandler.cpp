@@ -50,6 +50,11 @@ HttpServerRequestHandler::HttpServerRequestHandler(std::map<std::string,httpFunc
 void HttpServerRequestHandler::addWebSocket(const std::string & uri, wsFunction func)
 {
 	WebsocketHandler* handler = new WebsocketHandler(func, m_callbacks);
+	this->addWebSocket(uri, handler);
+}
+
+void HttpServerRequestHandler::addWebSocket(const std::string & uri, WebsocketHandlerInterface* handler)
+{
 	this->addWebSocketHandler(uri, handler);
 	m_wsHandler[uri] = handler;
 }
@@ -60,6 +65,7 @@ void HttpServerRequestHandler::removeWebSocket(const std::string & uri)
 	if (it != m_wsHandler.end())
 	{
 		this->removeWebSocketHandler(uri);
+		delete it->second;
 		m_wsHandler.erase(it);
 	}
 }

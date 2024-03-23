@@ -40,6 +40,7 @@ class HttpServerRequestHandler : public CivetServer
 		void publishJSON(const std::string & wsurl, const Json::Value & data);
 		void publishBin(const std::string & wsurl, const char* buf, unsigned int size);
 		void addWebSocket(const std::string & wsurl, wsFunction func = [](const struct mg_request_info *req_info, const Json::Value & in) -> Json::Value { return in; });
+		void addWebSocket(const std::string & wsurl, WebsocketHandlerInterface* handler);
 		void removeWebSocket(const std::string & wsurl);
 
 		int getNbConnections(const std::string & wsurl) {
@@ -49,6 +50,8 @@ class HttpServerRequestHandler : public CivetServer
 			}
 			return 0;
 		}
+
+		const CivetCallbacks* getCallbacks() { return m_callbacks; }
 				
 	protected:
 		void publish(const std::string & wsurl, int opcode, const char* buf, unsigned int size);
