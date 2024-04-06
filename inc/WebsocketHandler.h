@@ -34,6 +34,18 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 			const std::lock_guard<std::mutex> lock(m_cnxMutex);
 			return m_ws.size();
 		}
+
+		Json::Value getConnections() {
+			Json::Value json(Json::arrayValue);
+			const std::lock_guard<std::mutex> lock(m_cnxMutex);
+			for (auto ws : m_ws) {
+				const mg_request_info *req_info = mg_get_request_info(ws);
+				std::string addr(req_info->remote_addr);
+				std::string port(std::to_string(req_info->remote_port));
+				json.append(addr + ":" + port);
+			}
+			return json;
+		}
 			
 	protected:
 		void log_message(const struct mg_connection *conn, const char *message) {
