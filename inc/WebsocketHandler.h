@@ -101,7 +101,7 @@ class WebsocketHandler: public WebsocketHandlerInterface {
 		}
 
 	private:
-		HttpServerRequestHandler::httpFunction      m_func;	
+		HttpServerRequestHandler::wsFunction      	m_func;	
 		std::list<const struct mg_connection *>     m_ws;	
 		Json::StreamWriterBuilder                   m_jsonWriterBuilder;
 		std::mutex                                  m_cnxMutex; 

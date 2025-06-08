@@ -40,26 +40,45 @@ class RequestHandler : public CivetHandler
 		Json::Value  in = this->getInputMessage(req_info, conn);
 			
 		// invoke API implementation
-		Json::Value out(m_func(req_info, in));
+		std::tuple<int, std::map<std::string,std::string>,Json::Value> out(m_func(req_info, in));
+		
+		int code = std::get<0>(out);
+		std::string answer;
 			
 		// fill out
-		if (out.isNull() == false)
+		Json::Value& body = std::get<2>(out);
+		if (body.isNull() == false)
 		{
-			std::string answer(Json::writeString(m_jsonWriterBuilder,out));
-			log_message(conn, answer.c_str());	
+            if (body.isString()) {
+                answer = body.asString();
+            } else {
+                answer = Json::writeString(m_jsonWriterBuilder,body);
+            }
+		} else {
+            code = 500;
+            answer = mg_get_response_code_text(conn, code);
+        }
 
-			mg_printf(conn,"HTTP/1.1 200 OK\r\n");
-			mg_printf(conn,"Access-Control-Allow-Origin: *\r\n");
+        mg_printf(conn,"HTTP/1.1 %d OK\r\n", code);
+        mg_printf(conn,"Access-Control-Allow-Origin: *\r\n");
+        mg_printf(conn,"Content-Length: %zd\r\n", answer.size());
+		bool hasContentType = false;
+        std::map<std::string,std::string> & headers = std::get<1>(out);
+        for (auto & it : headers) {
+            mg_printf(conn,"%s: %s\r\n", it.first.c_str(), it.second.c_str());
+			if (it.first == "Content-Type") {
+				hasContentType = true;
+			}
+        } 
+		if (!hasContentType) {
+			// default content type
 			mg_printf(conn,"Content-Type: application/json\r\n");
-			mg_printf(conn,"Content-Length: %zd\r\n", answer.size());
-			mg_printf(conn,"Connection: close\r\n");
-			mg_printf(conn,"\r\n");
-			mg_write(conn,answer.c_str(),answer.size());
-			
-			ret = true;
-		}			
-		
-		return ret;
+		}
+
+		mg_printf(conn,"\r\n");
+        mg_write(conn,answer.c_str(),answer.size());
+        
+        return true;
 	}
 	bool handleGet(CivetServer *server, struct mg_connection *conn)
 	{

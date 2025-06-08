@@ -30,7 +30,8 @@ class WebsocketHandlerInterface : public CivetWebSocketHandler
 class HttpServerRequestHandler : public CivetServer
 {
 	public:
-		typedef std::function<Json::Value(const struct mg_request_info *, const Json::Value &)> httpFunction;
+		typedef std::tuple<int, std::map<std::string,std::string>,Json::Value> httpFunctionReturn;
+		typedef std::function<httpFunctionReturn(const struct mg_request_info *, const Json::Value &)> httpFunction;
 		typedef std::function<Json::Value(const struct mg_request_info *, const Json::Value &)> wsFunction;
 	
 		HttpServerRequestHandler(std::map<std::string,httpFunction>& httpfunc, std::map<std::string,wsFunction>& wsfunc, const std::vector<std::string>& options, int (*)(const struct mg_connection *, const char *) = NULL); 
