@@ -18,6 +18,8 @@ target_link_libraries (httpjsonserver PUBLIC Threads::Threads)
 # ssl
 if (WITH_SSL)
   add_definitions(-DNO_SSL_DL -DOPENSSL_API_1_1)
+  find_package(PkgConfig)
+  pkg_check_modules(OPENSSL openssl)
   find_package(OpenSSL)
   if(OPENSSL_FOUND)
       message(STATUS "OpenSSL found: inc:${OPENSSL_INCLUDE_DIR} lib:${OPENSSL_LIBRARIES}")
